@@ -20,15 +20,17 @@ Follow these steps to transfer your YouTube subscriptions:
 
    - Find the CSV file that contains your subscription information.
 
-3. **Clone This Repository:**
+3. **Install the Extension:**
 
-   - Clone this repository to your local machine.
+   If you can access the Chrome Web Store, you can directly install the [extension](https://chromewebstore.google.com/detail/youtube-auto-subscribe/pgidfiofpgjbnfnjfplkloacifhfnomi).
 
-4. **Load the Extension in Chrome:**
+   If you cannot access the Chrome Web Store, follow these steps:
 
-   - Go to [Chrome Extensions](chrome://extensions/)  in your browser.
-   - Enable "Developer mode" in the top right corner.
-   - Click on "Load unpacked" and select the folder where you cloned this repository.
+   > - Go to [Chrome Extensions](chrome://extensions/)  in your browser.
+   >
+   > - Enable "Developer mode" in the top right corner.
+   >
+   > - Click on "Load unpacked" and select the folder where you cloned this repository.
 
 5. **Select the CSV File:**
 
