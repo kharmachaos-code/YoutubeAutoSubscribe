@@ -1,29 +1,173 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>YouTube Auto Subscribe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         body {
-            width: 300px;
-            padding: 10px;
-            font-family: Arial, sans-serif;
+            width: 350px;
+            padding: 20px;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
         }
-        #message {
-            margin-top: 10px;
-            color: green;
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ff0000;
+            font-size: 20px;
+            font-weight: 500;
         }
-        #errorMessage {
+
+        .import-section {
+            background: white;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .import-section:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .import-section h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+
+        .import-section h3::before {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .channels h3::before {
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23FF0000" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>');
+        }
+
+        .playlists h3::before {
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23FF0000" d="M4 10h12v2H4zm0-4h12v2H4zm0 8h8v2H4zm10 0v6l5-3z"/></svg>');
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .custom-file-input {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #f0f0f0;
+            color: #333;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border: 1px solid #ddd;
+            width: calc(100% - 34px);
+        }
+
+        .custom-file-input:hover {
+            background-color: #e8e8e8;
+        }
+
+        input[type="file"] {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .message {
             margin-top: 10px;
-            color: red;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .success {
+            color: #0f5132;
+            background-color: #d1e7dd;
+            border: 1px solid #badbcc;
+        }
+
+        .error {
+            color: #842029;
+            background-color: #f8d7da;
+            border: 1px solid #f5c2c7;
+        }
+
+        .progress {
+            margin-top: 10px;
+            height: 4px;
+            background-color: #f0f0f0;
+            border-radius: 2px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #ff0000;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
         }
     </style>
 </head>
 <body>
-    <h2>YouTube Auto Subscribe</h2>
-    <input type="file" id="fileInput" accept=".csv">
-    <div id="message"></div>
-    <div id="errorMessage"></div>
+    <div class="header">
+        YouTube Auto Subscribe
+    </div>
+
+    <div class="import-section channels">
+        <h3>Import Channels</h3>
+        <div class="file-input-wrapper">
+            <div class="custom-file-input">Choose CSV file</div>
+            <input type="file" id="fileInput" accept=".csv">
+        </div>
+        <div class="progress">
+            <div class="progress-bar"></div>
+        </div>
+        <div class="status" id="channelStatus"></div>
+        <div id="message" class="message"></div>
+        <div id="errorMessage" class="message error" style="display: none;"></div>
+    </div>
+
+    <div class="import-section playlists">
+        <h3>Import Playlists</h3>
+        <div class="file-input-wrapper">
+            <div class="custom-file-input">Choose folder</div>
+            <input type="file" id="playlistFolderInput" webkitdirectory directory multiple>
+        </div>
+        <div class="progress">
+            <div class="progress-bar"></div>
+        </div>
+        <div class="status" id="playlistStatus"></div>
+        <div id="playlistMessage" class="message"></div>
+        <div id="playlistError" class="message error" style="display: none;"></div>
+    </div>
+
     <script src="popup.js"></script>
 </body>
 </html>
