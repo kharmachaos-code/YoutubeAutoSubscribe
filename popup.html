@@ -1,15 +1,27 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>YouTube Auto Subscribe</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         body {
-            width: 350px;
+            width: 450px;
+            /* 从 350px 增加到 400px */
             padding: 20px;
             font-family: 'Roboto', sans-serif;
             background-color: #f9f9f9;
             margin: 0;
+            min-height: 300px;
+            /* 添加最小高度 */
+        }
+
+        .channels h3::before {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FF0000' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z'/%3E%3C/svg%3E");
+        }
+
+        .playlists h3::before {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FF0000' d='M4 10h12v2H4zm0-4h12v2H4zm0 8h8v2H4zm10 0v6l5-3z'/%3E%3C/svg%3E");
         }
 
         .header {
@@ -25,12 +37,12 @@
             margin-bottom: 20px;
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
         }
 
         .import-section:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
         .import-section h3 {
@@ -135,6 +147,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         YouTube Auto Subscribe
@@ -170,4 +183,5 @@
 
     <script src="popup.js"></script>
 </body>
+
 </html>

@@ -1,33 +1,50 @@
 let observer;
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-    if (request.action === "subscribeToChannel") {
+    if (request.action === "processCSV") {
+        // 创建一个新的 Promise 链来处理整个流程
         (async () => {
             try {
-                await subscribeToChannel(request.channelUrl, request.channelTitle);
-                sendResponse({ status: "success" });
+                await processChannels(request.data);
+                // 在这里等待页面跳转完成
+                await new Promise((resolve) => {
+                    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+                        const currentTab = tabs[0];
+                        chrome.tabs.update(currentTab.id, {
+                            url: chrome.runtime.getURL('completion.html')
+                        }, () => {
+                            resolve();
+                        });
+                    });
+                });
+                sendResponse({ success: true });
             } catch (error) {
-                console.error(`订阅失败: ${error}`);
-                sendResponse({ status: "error", error: error.message });
+                console.error('Error processing channels:', error);
+                // 发生错误时跳转到错误页面
+                await new Promise((resolve) => {
+                    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+                        const currentTab = tabs[0];
+                        chrome.tabs.update(currentTab.id, {
+                            url: chrome.runtime.getURL('completion.html') + '?error=' + encodeURIComponent(error.message)
+                        }, () => {
+                            resolve();
+                        });
+                    });
+                });
+                sendResponse({ success: false, error: error.message });
             }
         })();
-        return true; // Indicates that async response will be sent
+        return true; // 保持消息通道开启
     }
     if (request.action === "createPlaylist") {
         (async () => {
             try {
-                // 先处理当前页面的视频
-                await addVideoToPlaylist(request.currentVideo, request.name);
-                console.log('该视频处理完成，发送消息继续处理下一个视频');
-                
-                // 通知后台脚本继续处理下一个视频
-                sendResponse({ 
-                    status: "continue", 
-                    processedVideo: request.currentVideo 
-                });
+                const result = await addVideoToPlaylist(request.currentVideo, request.name);
+                console.log('视频处理结果:', result);
+                sendResponse(result);
             } catch (error) {
                 console.error('处理播放列表失败:', error);
-                sendResponse({ status: "error", error: error.message });
+                sendResponse({ status: "continue", error: error.message });
             }
         })();
         return true;
@@ -222,10 +239,10 @@ async function addVideoToPlaylist(videoId, playlistName) {
         // 等待操作完成
         await new Promise(r => setTimeout(r, 1500));
         console.log(`视频 ${videoId} 已处理完成`);
-        return true;
+        return { status: "continue", success: true }; // 修改返回值格式
         
     } catch (error) {
         console.error(`添加视频 ${videoId} 失败:`, error);
-        throw error;
+        return { status: "continue", error: error.message }; // 即使失败也继续处理下一个
     }
 }
