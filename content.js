@@ -1,6 +1,25 @@
 let observer;
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
+    if (request.action === "subscribeToChannel") {
+        console.log('收到订阅请求:', request);
+
+        // 执行订阅操作
+        subscribeToChannel(request.channelUrl, request.channelTitle)
+            .then(subscribed => {
+                if (subscribed) {
+                    sendResponse({ status: "success", message: "Successfully subscribed" });
+                } else {
+                    sendResponse({ status: "success", message: "Already subscribed" });
+                }
+            })
+            .catch(error => {
+                console.error('订阅失败:', error);
+                sendResponse({ status: "error", message: error.message });
+            });
+
+        return true; // 保持消息通道开启
+    }
     if (request.action === "processCSV") {
         // 创建一个新的 Promise 链来处理整个流程
         (async () => {
@@ -8,7 +27,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
                 await processChannels(request.data);
                 // 在这里等待页面跳转完成
                 await new Promise((resolve) => {
-                    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+                    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
                         const currentTab = tabs[0];
                         chrome.tabs.update(currentTab.id, {
                             url: chrome.runtime.getURL('completion.html')
@@ -22,7 +41,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
                 console.error('Error processing channels:', error);
                 // 发生错误时跳转到错误页面
                 await new Promise((resolve) => {
-                    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+                    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
                         const currentTab = tabs[0];
                         chrome.tabs.update(currentTab.id, {
                             url: chrome.runtime.getURL('completion.html') + '?error=' + encodeURIComponent(error.message)
@@ -55,7 +74,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
 const waitForElement = (selector, timeout = 5000, parent = document) => {
     return new Promise((resolve, reject) => {
         const startTime = Date.now();
-        
+
         const checkElement = () => {
             const element = parent.querySelector(selector);
             if (element) {
@@ -76,57 +95,86 @@ const subscribeToChannel = async (channelUrl, channelTitle) => {
 
     try {
         // 等待页面加载完成
-        await waitForElement('body'); // 等待页面主体加载
+        await new Promise(r => setTimeout(r, 500)); // 额外等待时间确保 YouTube 动态内容加载
 
-        // 等待订阅按钮出现
-        const subscribeButton = await waitForElement('button[aria-label^="订阅"], button[aria-label^="Subscribe"]');
+        // 尝试多个可能的订阅按钮选择器
+        const buttonSelectors = [
+            'button[aria-label^="订阅"]',
+            'button[aria-label^="Subscribe"]',
+            '#subscribe-button button',
+            'ytd-subscribe-button-renderer button',
+            '#subscribe-button ytd-subscribe-button-renderer button'
+        ];
+
+        let subscribeButton = null;
+        for (const selector of buttonSelectors) {
+            try {
+                subscribeButton = await waitForElement(selector, 200);
+                if (subscribeButton) break;
+            } catch (e) {
+                console.log(`未找到选择器 ${selector} 的按钮，尝试下一个...`);
+            }
+        }
+
+        if (!subscribeButton) {
+            throw new Error('未找到订阅按钮');
+        }
+
         console.log('找到订阅按钮:', subscribeButton);
 
         // 检查按钮状态
         const buttonText = subscribeButton.textContent.trim().toLowerCase();
-        if (buttonText.includes('订阅') || buttonText.includes('subscribe')) {
-            // 创建鼠标点击事件
-            const event = new MouseEvent('click', {
-                bubbles: true,
-                cancelable: true,
-                view: window
-            });
-            subscribeButton.dispatchEvent(event);
+        const ariaLabel = subscribeButton.getAttribute('aria-label')?.toLowerCase() || '';
+        
+        const isSubscribed = 
+            buttonText.includes('已订阅') || 
+            buttonText.includes('subscribed') ||
+            ariaLabel.includes('取消订阅') ||
+            ariaLabel.includes('unsubscribe');
+
+        if (!isSubscribed) {
+            // 点击订阅按钮
+            subscribeButton.click();
             console.log('已点击订阅按钮');
+
+            // 等待订阅状态更新
+            await new Promise(r => setTimeout(r, 200));
+            
+            // 验证订阅是否成功
+            const newButtonText = subscribeButton.textContent.trim().toLowerCase();
+            const newAriaLabel = subscribeButton.getAttribute('aria-label')?.toLowerCase() || '';
+            const subscribeSuccess = 
+                newButtonText.includes('已订阅') || 
+                newButtonText.includes('subscribed') ||
+                newAriaLabel.includes('取消订阅') ||
+                newAriaLabel.includes('unsubscribe');
+                
+            if (!subscribeSuccess) {
+                throw new Error('订阅操作未成功完成');
+            }
+            
+            return true;
         } else {
             console.log('频道已经被订阅，无需操作');
+            return false;
         }
     } catch (error) {
         console.error('订阅过程中发生错误:', error);
-        throw error; // 将错误抛出以便于上层捕获
+        throw error; // 正确抛出错误
     }
 };
-
-
-// 等待页面完全加载
-const waitForPageLoad = async () => {
-    // 等待页面基本加载完成
-    if (document.readyState !== 'complete') {
-        await new Promise(resolve => {
-            window.addEventListener('load', resolve, { once: true });
-        });
-    }
-    // 额外等待一段时间确保 YouTube 的动态内容加载完成
-    await new Promise(r => setTimeout(r, 2000));
-};
-
 
 async function isVideoAvailable() {
     try {
         const videoId = new URL(window.location.href).searchParams.get('v');
         if (!videoId) return false;
-        
+
         const response = await fetch(`https://img.youtube.com/vi/${videoId}/default.jpg`);
         if (!response.ok) {
             console.log(`视频 ${videoId} 的缩略图不存在，视频可能已失效`);
             return false;
         }
-        
+
         return true;
     } catch (error) {
         console.log(`检查视频缩略图失败:`, error);
@@ -134,20 +182,33 @@ async function isVideoAvailable() {
     }
 }
 
+// 等待页面加载完成
+const waitForPageLoad = () => {
+    return new Promise((resolve) => {
+        if (document.readyState === 'complete') {
+            resolve();
+        } else {
+            window.addEventListener('load', () => {
+                resolve();
+            });
+        }
+    });
+};
+
 async function addVideoToPlaylist(videoId, playlistName) {
     try {
         // 确保页面完全加载
         await waitForPageLoad();
-        
+
         // 等待更长时间以确保错误信息和视频信息完全加载
         await new Promise(r => setTimeout(r, 3000));
-        
+
         // 检查视频是否可用
         if (!await isVideoAvailable()) {
             console.log(`视频 ${videoId} 不可用，跳过处理`);
             return { status: "continue", skipped: true };
         }
-        
+
         // 点击保存按钮，添加重试机制
         let saveButton;
         for (let retryCount = 0; retryCount < 3; retryCount++) {
@@ -174,7 +235,7 @@ async function addVideoToPlaylist(videoId, playlistName) {
             }
         }
 
-        
+
         // 等待播放列表菜单出现
         let playlistsContainer;
         for (let retryCount = 0; retryCount < 3; retryCount++) {
@@ -189,15 +250,15 @@ async function addVideoToPlaylist(videoId, playlistName) {
                 if (retryCount === 2) throw error;
             }
         }
-        
+
         try {
             // 等待播放列表选项加载完成
             await new Promise(r => setTimeout(r, 1000));
-            
+
             // 查找目标播放列表
             const allOptions = playlistsContainer.querySelectorAll('ytd-playlist-add-to-option-renderer');
             let targetOption = null;
-            
+
             for (const option of allOptions) {
                 const titleElement = option.querySelector('yt-formatted-string[id="label"]');
                 if (titleElement && titleElement.getAttribute('title') === playlistName) {
@@ -205,11 +266,11 @@ async function addVideoToPlaylist(videoId, playlistName) {
                     break;
                 }
             }
-            
+
             if (targetOption) {
                 const checkbox = targetOption.querySelector('tp-yt-paper-checkbox');
                 const isChecked = checkbox.getAttribute('aria-checked') === 'true';
-                
+
                 if (!isChecked) {
                     console.log(`将视频添加到播放列表 ${playlistName}`);
                     checkbox.click();
@@ -222,12 +283,12 @@ async function addVideoToPlaylist(videoId, playlistName) {
                 const createNewButton = await waitForElement('button[aria-label^="新建播放列表"], button[aria-label^="New playlist"]');
                 createNewButton.click();
                 await new Promise(r => setTimeout(r, 1000));
-                
+
                 const nameInput = await waitForElement('textarea.ytStandardsTextareaShapeTextarea');
                 nameInput.value = playlistName;
                 nameInput.dispatchEvent(new Event('input', { bubbles: true }));
                 await new Promise(r => setTimeout(r, 500));
-                
+
                 const createButton = await waitForElement('.yt-spec-button-shape-next--filled[aria-label^="创建"], .yt-spec-button-shape-next--filled[aria-label^="Create"]');
                 createButton.click();
             }
@@ -235,12 +296,12 @@ async function addVideoToPlaylist(videoId, playlistName) {
             console.error('处理播放列表选项失败:', error);
             throw error;
         }
-        
+
         // 等待操作完成
         await new Promise(r => setTimeout(r, 1500));
         console.log(`视频 ${videoId} 已处理完成`);
         return { status: "continue", success: true }; // 修改返回值格式
-        
+
     } catch (error) {
         console.error(`添加视频 ${videoId} 失败:`, error);
         return { status: "continue", error: error.message }; // 即使失败也继续处理下一个

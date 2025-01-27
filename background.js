@@ -1,35 +1,33 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.action === "processCSV") {
-            // 立即返回，表示我们会异步处理
-            sendResponse({ received: true });
-            
-            // 异步处理逻辑
-            (async () => {
-                try {
-                    await processChannels(request.data);
-                    // 处理完成后，使用新的消息通知 popup
-                    chrome.runtime.sendMessage({
-                        action: "processComplete",
-                        success: true
-                    });
-                } catch (error) {
-                    console.error('Error:', error);
-                    chrome.runtime.sendMessage({
-                        action: "processComplete",
-                        success: false,
-                        error: error.message
-                    });
-                }
-            })();
-            return true; // 保持消息通道开启
-        }
-        
-        if (request.action === "keepAlive") {
-            sendResponse({ status: "alive" });
-            return true;
-        }
-    });
+    if (request.action === "processCSV") {
+        // 立即返回，表示我们会异步处理
+        sendResponse({ received: true });
+
+        // 异步处理逻辑
+        (async () => {
+            try {
+                await processChannels(request.data);
+                // 处理完成后，使用新的消息通知 popup
+                chrome.runtime.sendMessage({
+                    action: "processComplete",
+                    success: true
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                chrome.runtime.sendMessage({
+                    action: "processComplete",
+                    success: false,
+                    error: error.message
+                });
+            }
+        })();
+        return true; // 保持消息通道开启
+    }
+
+    if (request.action === "keepAlive") {
+        sendResponse({ status: "alive" });
+        return true;
+    }
     if (request.action === "processAllPlaylists") {
         processAllPlaylists(request.playlists).then(() => {
             sendResponse({ success: true });
@@ -45,6 +43,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
+// 添加一个辅助函数来安全地发送消息到 popup
+async function sendMessageToPopup(message) {
+    try {
+        // 检查 popup 是否打开
+        const views = chrome.extension.getViews({ type: "popup" });
+        if (views.length > 0) {
+            await chrome.runtime.sendMessage(message);
+        }
+    } catch (error) {
+        console.log('Popup may be closed, cannot send message');
+    }
+}
+
 // 处理频道的函数
 async function processChannels(data) {
     const channels = CSVToArray(data);
@@ -56,7 +67,7 @@ async function processChannels(data) {
         for (let i = 1; i < channels.length; i++) {
             const channelUrl = channels[i][1];
             const channelTitle = channels[i][2];
-            
+
             if (!channelUrl || !channelTitle) {
                 console.log(`跳过无效数据行 ${i}`);
                 continue;
@@ -67,36 +78,65 @@ async function processChannels(data) {
             await new Promise((resolve, reject) => {
                 chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
                     const currentTab = tabs[0];
+
+                    // 更新标签页到频道URL
                     chrome.tabs.update(currentTab.id, { url: channelUrl }, function () {
-                        const listener = function(tabId, changeInfo) {
+                        // 等待页面完全加载
+                        const listener = function (tabId, changeInfo) {
                             if (tabId === currentTab.id && changeInfo.status === 'complete') {
                                 chrome.tabs.onUpdated.removeListener(listener);
-                                setTimeout(() => {
-                                    chrome.tabs.sendMessage(currentTab.id, {
-                                        action: "subscribeToChannel",
-                                        channelUrl,
-                                        channelTitle
-                                    }, (response) => {
-                                        if (response && response.status === "success") {
-                                            console.log(`Successfully subscribed to ${channelTitle}`);
-                                            totalProcessed++;
-                                        }
-                                        resolve();
-                                    });
-                                }, 2000);
+
+                                // 确保 content script 已经注入并准备就绪
+                                const retryMessageSend = (retryCount = 0) => {
+                                    setTimeout(() => {
+                                        chrome.tabs.sendMessage(currentTab.id, {
+                                            action: "subscribeToChannel",
+                                            channelUrl,
+                                            channelTitle
+                                        }, response => {
+                                            if (chrome.runtime.lastError) {
+                                                console.log('重试发送消息:', retryCount);
+                                                if (retryCount < 3) {
+                                                    retryMessageSend(retryCount + 1);
+                                                } else {
+                                                    console.error('发送消息失败:', chrome.runtime.lastError);
+                                                    resolve(); // 继续处理下一个频道
+                                                }
+                                                return;
+                                            }
+
+                                            if (response && response.status === "success") {
+                                                console.log(`Successfully subscribed to ${channelTitle}`);
+                                                totalProcessed++;
+                                            }
+                                            resolve();
+                                        });
+                                    }, retryCount === 0 ? 2000 : 1000); // 首次等待更长时间
+                                };
+
+                                retryMessageSend();
                             }
                         };
                         chrome.tabs.onUpdated.addListener(listener);
                     });
                 });
             });
+            // 发送进度更新
+            await sendMessageToPopup({
+                action: "updateProgress",
+                type: "channels",
+                progress: Math.round((i / (channels.length - 1)) * 100)
+            });
         }
+        // 处理完成后发送完成消息
+        await sendMessageToPopup({
+            action: "processComplete",
+            success: true
+        });
 
         // 所有频道处理完成后，跳转到完成页面
-        console.log(`All channels processed (${totalProcessed}/${channels.length - 1})`);
-        
         return new Promise((resolve) => {
-            chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
                 const currentTab = tabs[0];
                 chrome.tabs.update(currentTab.id, {
                     url: chrome.runtime.getURL('completion.html')
@@ -108,16 +148,9 @@ async function processChannels(data) {
 
     } catch (error) {
         console.error('Error processing channels:', error);
-        chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-            const currentTab = tabs[0];
-            chrome.tabs.update(currentTab.id, {
-                url: chrome.runtime.getURL('completion.html') + '?error=' + encodeURIComponent(error.message)
-            });
-        });
         throw error;
     }
 }
-
 // CSV解析函数
 function CSVToArray(strData, strDelimiter) {
     strDelimiter = (strDelimiter || ",");

@@ -13,33 +13,41 @@ function updateFileInputLabel(input, defaultText) {
     });
 }
 
+
 // 处理文件上传
 async function handleFile(event) {
     const file = event.target.files[0];
-    const messageDiv = document.getElementById('message');
-    const errorMessageDiv = document.getElementById('errorMessage');
+    console.log('File selected:', file?.name);
 
-    messageDiv.textContent = '';
-    errorMessageDiv.textContent = '';
-    errorMessageDiv.style.display = 'none';
+    try {
+        // 1. 读取 CSV 文件
+        const csvData = await readFileAsync(file);
+        console.log('CSV data loaded, length:', csvData.length);
 
-    if (file) {
-        try {
-            const csvData = await readFileAsync(file);
-            // 发送消息并等待初始响应
-            chrome.runtime.sendMessage({ 
-                action: "processCSV", 
-                data: csvData 
-            });
-            
-            // 显示处理中的状态
-            messageDiv.textContent = 'Processing...';
-            messageDiv.className = 'message';
-            
-        } catch (error) {
-            errorMessageDiv.textContent = 'File read failed: ' + error.message;
-            errorMessageDiv.style.display = 'block';
-        }
+        // 2. 直接发送数据到 background script 处理
+        console.log('Sending data to background script...');
+        chrome.runtime.sendMessage({
+            action: "processCSV",
+            data: csvData
+        }, response => {
+            console.log('Background script response:', response);
+            if (chrome.runtime.lastError) {
+                console.error('Error:', chrome.runtime.lastError);
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = 'Error: ' + chrome.runtime.lastError.message;
+                errorDiv.style.display = 'block';
+            } else {
+                const messageDiv = document.getElementById('message');
+                messageDiv.textContent = 'Processing channels...';
+                messageDiv.className = 'message';
+            }
+        });
+
+    } catch (error) {
+        console.error('Error:', error);
+        const errorDiv = document.getElementById('errorMessage');
+        errorDiv.textContent = 'Error: ' + error.message;
+        errorDiv.style.display = 'block';
     }
 }
 
@@ -77,7 +85,7 @@ async function handlePlaylistFolder(event) {
                 errorDiv.textContent = 'Error: ' + chrome.runtime.lastError.message;
                 errorDiv.style.display = 'block';
             } else if (response.success) {
-                messageDiv.textContent = '所有播放列表处理完成';
+                messageDiv.textContent = 'All playlists processed successfully';
                 messageDiv.className = 'message success';
             } else {
                 errorDiv.textContent = 'Process error: ' + response.error;
@@ -86,7 +94,7 @@ async function handlePlaylistFolder(event) {
         });
     } catch (error) {
         console.error('处理播放列表失败:', error);
-        errorDiv.textContent = `处理失败: ${error.message}`;
+        errorDiv.textContent = `Processing failed: ${error.message}`;
         errorDiv.style.display = 'block';
     }
 }
@@ -127,12 +135,27 @@ function CSVToArray(strData, strDelimiter = ",") {
 // 初始化
 let keepAliveInterval;
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('popup.js 初始化');
     const fileInput = document.getElementById('fileInput');
     const playlistFolderInput = document.getElementById('playlistFolderInput');
 
+    // 初始化进度条
+    const progressContainer = document.querySelector('.channels .progress');
+    if (progressContainer) {
+        progressContainer.style.display = 'none';
+    }
+    const progressBar = document.querySelector('.channels .progress-bar');
+    if (progressBar) {
+        progressBar.style.width = '0%';
+    }
+
     if (fileInput) {
-        updateFileInputLabel(fileInput, 'Choose CSV file');
+        console.log('找到文件输入框，添加事件监听器');
+        // 移除旧的事件监听器
+        fileInput.removeEventListener('change', handleFile);
+        // 添加新的事件监听器
         fileInput.addEventListener('change', handleFile);
+        updateFileInputLabel(fileInput, 'Choose CSV file');
     }
 
     if (playlistFolderInput) {
@@ -155,10 +178,11 @@ window.addEventListener('unload', () => {
 
 // 监听来自后台脚本的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+
     if (request.action === "processComplete") {
         const messageDiv = document.getElementById('message');
         const errorMessageDiv = document.getElementById('errorMessage');
-        
+
         if (request.success) {
             messageDiv.textContent = 'Process completed successfully';
             messageDiv.className = 'message success';
@@ -173,30 +197,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (progressBar && progressContainer) {
             progressContainer.style.display = 'block';
             progressBar.style.width = `${request.progress}%`;
+            console.log(`更新进度: ${request.progress}%`); // 添加日志
+        } else {
+            console.log('进度条元素未找到'); // 添加调试信息
         }
     } else if (request.action === "playlistsCompleted") {
-        // 显示完成消息
+        // Show completion message
         const messageDiv = document.getElementById('playlistMessage');
         if (messageDiv) {
-            messageDiv.textContent = request.message;
+            messageDiv.textContent = 'All playlists processed successfully';
             messageDiv.className = 'message success';
         }
-        
-        // 隐藏进度条
+
+        // Hide progress bar
         const progressContainer = document.querySelector('.playlists .progress');
         if (progressContainer) {
             progressContainer.style.display = 'none';
         }
-        
+
     } else if (request.action === "playlistsError") {
-        // 显示错误消息
+        // Show error message
         const errorDiv = document.getElementById('playlistError');
         if (errorDiv) {
             errorDiv.textContent = `Processing failed: ${request.error}`;
             errorDiv.style.display = 'block';
         }
-        
-        // 错误时也使用通知
+
+        // Also use notification
         chrome.notifications.create({
             type: 'basic',
             iconUrl: 'icon48.png',
