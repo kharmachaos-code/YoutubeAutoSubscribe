@@ -10,17 +10,19 @@ making it easy to migrate your subscriptions from an old account to a new one.
 
 ## How to Use
 
+### Migrate subscriptions
+
+**Backup Your YouTube Data:**
+
+- Use Google Takeout to export the YouTube history data from your old account.
+
 Follow these steps to transfer your YouTube subscriptions:
 
-1. **Backup Your YouTube Data:**
-
-   - Use Google Takeout to export the YouTube history data from your old account.
-
-2. **Locate the Subscriptions CSV File:**
+1. **Locate the Subscriptions CSV File:**
 
    - Find the CSV file that contains your subscription information.
 
-3. **Install the Extension:**
+2. **Install the Extension:**
 
    If you can access the Chrome Web Store, you can directly install the [extension](https://chromewebstore.google.com/detail/youtube-auto-subscribe/pgidfiofpgjbnfnjfplkloacifhfnomi).
 
@@ -32,7 +34,7 @@ Follow these steps to transfer your YouTube subscriptions:
    >
    > - Click on "Load unpacked" and select the folder where you cloned this repository.
 
-5. **Select the CSV File:**
+3. **Select the CSV File:**
 
    - Open the YouTube website.
    - Click on the extension icon in the Chrome toolbar.
@@ -40,8 +42,22 @@ Follow these steps to transfer your YouTube subscriptions:
 
    ![choose](./assets/chooseFile.png)
 
-6. **Start the Script:**
+4. **Start the Script:**
    - Wait for the script to execute and subscribe to the channels listed in the CSV file.
+
+### Migrate Playlists
+
+This feature allows you to restore your YouTube playlists from backup CSV files.
+
+#### Steps:
+1. Click "Choose folder" and select the folder containing playlist backup files
+   - Files should be named as `playlist-name-videos.csv`
+   - Each CSV file represents one playlist
+   - The script will automatically filter for files ending with `-videos.csv`
+
+2. Wait for the process to complete
+   - You can minimize the browser but keep it open
+   - A notification will appear when all playlists are processed
 
 ## Notes
 
