@@ -4,60 +4,39 @@
 
 [![](https://img.shields.io/badge/Youtube-pink?style=flat-square&logo=YouTube&logoColor=white)](https://youtube.com)
 
-This tool allows you to automatically subscribe to YouTube channels from a backup CSV file
+This Chrome extension helps you quickly move your YouTube subscriptions and playlists from one account to another using backup CSV files.
 
-making it easy to migrate your subscriptions from an old account to a new one.
+## Features
+
+- Transfer subscriptions
+- Migrate playlists
 
 ## How to Use
 
-### Migrate subscriptions
+### 1. Backup Your Data
 
-**Backup Your YouTube Data:**
+Use Google Takeout to export your YouTube data from your old account:
 
-- Use Google Takeout to export the YouTube history data from your old account.
+- Subscriptions list
+- Playlists data
 
-Follow these steps to transfer your YouTube subscriptions:
+### 2. Transfer Data
 
-1. **Locate the Subscriptions CSV File:**
+![choose](./assets/chooseFile.png)
 
-   - Find the CSV file that contains your subscription information.
+#### For Subscriptions:
 
-2. **Install the Extension:**
+1. Open YouTube and log in to your new account
+2. Click the extension icon
+3. Select your subscriptions CSV file
+4. Wait for the process to complete
 
-   If you can access the Chrome Web Store, you can directly install the [extension](https://chromewebstore.google.com/detail/youtube-auto-subscribe/pgidfiofpgjbnfnjfplkloacifhfnomi).
+#### For Playlists:
 
-   If you cannot access the Chrome Web Store, follow these steps:
-
-   > - Go to [Chrome Extensions](chrome://extensions/)  in your browser.
-   >
-   > - Enable "Developer mode" in the top right corner.
-   >
-   > - Click on "Load unpacked" and select the folder where you cloned this repository.
-
-3. **Select the CSV File:**
-
-   - Open the YouTube website.
-   - Click on the extension icon in the Chrome toolbar.
-   - Choose the path to the CSV file containing your subscriptions.
-
-   ![choose](./assets/chooseFile.png)
-
-4. **Start the Script:**
-   - Wait for the script to execute and subscribe to the channels listed in the CSV file.
-
-### Migrate Playlists
-
-This feature allows you to restore your YouTube playlists from backup CSV files.
-
-#### Steps:
-1. Click "Choose folder" and select the folder containing playlist backup files
-   - Files should be named as `playlist-name-videos.csv`
-   - Each CSV file represents one playlist
-   - The script will automatically filter for files ending with `-videos.csv`
-
-2. Wait for the process to complete
-   - You can minimize the browser but keep it open
-   - A notification will appear when all playlists are processed
+1. Click "Choose folder" in the Playlists section
+2. Select the folder containing your playlist backup files (ending with `-videos.csv`)
+3. Drink a coffee while the extension creates playlists and adds videos
+4. You'll see a completion notification when done
 
 ## Notes
 
@@ -65,7 +44,27 @@ This feature allows you to restore your YouTube playlists from backup CSV files.
 - The script may take some time depending on the number of subscriptions being processed.
 - **Make sure the YouTube webpage is set to English or Chinese.**
 
-## Troubleshooting
+## Having Issues?
 
-- If you encounter any issues, check the console for error messages and ensure that the CSV file is formatted correctly.
-- For any further assistance, feel free to reach out via [Issue](https://github.com/looechao/YoutubeAutoSubscribe/issues).
+If you're experiencing problems, please try these steps:
+
+1. Verify your CSV files:
+   - For subscriptions: Use the original channels list from Google Takeout
+   - For playlists: Ensure filenames end with `-videos.csv`
+
+2. If issues persist:
+   - Open an [issue](https://github.com/looechao/YoutubeAutoSubscribe/issues) on Github
+   - Include your browser console logs (Press F12 > Console)
+   - Describe the steps to reproduce the problem
+
+## Want to contribute? 
+
+Awesome! 🎉
+
+- Found a bug? [Open an issue](https://github.com/looechao/YoutubeAutoSubscribe/issues/new)
+
+- Have an improvement? [Submit a PR](https://github.com/looechao/YoutubeAutoSubscribe/pulls)
+
+If you find this extension helpful, I'd be grateful for your star! ⭐️ 
+
+Thank you for your support! 🙏
