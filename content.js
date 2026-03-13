@@ -58,7 +58,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     if (request.action === "createPlaylist") {
         (async () => {
             try {
-                const result = await addVideoToPlaylist(request.currentVideo, request.name);
+                const result = await addVideoToPlaylist(request.currentVideo, request.name); //check
                 console.log('视频处理结果: Video Processing Results: ', result);
                 sendResponse(result);
             } catch (error) {
@@ -240,7 +240,7 @@ async function addVideoToPlaylist(videoId, playlistName) {
         let playlistsContainer;
         for (let retryCount = 0; retryCount < 3; retryCount++) {
             try {
-                playlistsContainer = await waitForElement('#playlists', 1000);//check
+                playlistsContainer = await waitForElement('#contentWrapper > yt-sheet-view-model', 1000);//check
                 break;
             } catch (error) {
                 console.log(`第 ${retryCount + 1} 次尝试获取播放列表容器失败 attempt to retrieve the playlist container failed.，重试中 retrying...`);
