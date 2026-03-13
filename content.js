@@ -280,7 +280,7 @@ async function addVideoToPlaylist(videoId, playlistName) {
                 }
             } else {
                 console.log(`播放列表if the playlist ${playlistName} does not exist，创建新的 create a new one...`);
-                const createNewButton = await waitForElement('button[aria-label^="新建播放列表"], button[aria-label^="Create"]'); //clearing this error
+                const createNewButton = await waitForElement('button[aria-label^="新建播放列表"], button[aria-label^="Create New Playlist"]'); //clearing this error hopefully
                 createNewButton.click();
                 await new Promise(r => setTimeout(r, 1000));
 
