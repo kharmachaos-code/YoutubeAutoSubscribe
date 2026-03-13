@@ -240,7 +240,7 @@ async function addVideoToPlaylist(videoId, playlistName) {
         let playlistsContainer;
         for (let retryCount = 0; retryCount < 3; retryCount++) {
             try {
-                playlistsContainer = await waitForElement('#playlists');
+                playlistsContainer = await waitForElement('#playlists');//check
                 break;
             } catch (error) {
                 console.log(`第 ${retryCount + 1} 次尝试获取播放列表容器失败，重试中...`);
@@ -256,7 +256,7 @@ async function addVideoToPlaylist(videoId, playlistName) {
             await new Promise(r => setTimeout(r, 1000));
 
             // 查找目标播放列表
-            const allOptions = playlistsContainer.querySelectorAll('ytd-playlist-add-to-option-renderer');
+            const allOptions = playlistsContainer.querySelectorAll('ytd-playlist-add-to-option-renderer');//check
             let targetOption = null;
 
             for (const option of allOptions) {
@@ -268,7 +268,7 @@ async function addVideoToPlaylist(videoId, playlistName) {
             }
 
             if (targetOption) {
-                const checkbox = targetOption.querySelector('tp-yt-paper-checkbox');
+                const checkbox = targetOption.querySelector('tp-yt-paper-checkbox');//check
                 const isChecked = checkbox.getAttribute('aria-checked') === 'true';
 
                 if (!isChecked) {
