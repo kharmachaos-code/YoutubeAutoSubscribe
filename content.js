@@ -18,7 +18,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
                 sendResponse({ status: "error", message: error.message });
             });
 
-        return true; // 保持消息通道开启
+        return true; // 保持消息通道开启 keep the message channel open
     }
     if (request.action === "processCSV") {
         // 创建一个新的 Promise 链来处理整个流程
@@ -59,10 +59,10 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
         (async () => {
             try {
                 const result = await addVideoToPlaylist(request.currentVideo, request.name);
-                console.log('视频处理结果:', result);
+                console.log('视频处理结果: Video Processing Results: ', result);
                 sendResponse(result);
             } catch (error) {
-                console.error('处理播放列表失败:', error);
+                console.error('处理播放列表失败: Playlist Processing Failed:', error);
                 sendResponse({ status: "continue", error: error.message });
             }
         })();
@@ -80,7 +80,7 @@ const waitForElement = (selector, timeout = 5000, parent = document) => {
             if (element) {
                 resolve(element);
             } else if (Date.now() - startTime > timeout) {
-                reject(new Error(`元素 ${selector} 在 ${timeout}ms 内未找到`));
+                reject(new Error(`元素 element ${selector} 在 ${timeout}ms 内未找到 not found inside`));
             } else {
                 setTimeout(checkElement, 100);
             }
@@ -243,7 +243,7 @@ async function addVideoToPlaylist(videoId, playlistName) {
                 playlistsContainer = await waitForElement('#playlists');//check
                 break;
             } catch (error) {
-                console.log(`第 ${retryCount + 1} 次尝试获取播放列表容器失败，重试中...`);
+                console.log(`第 ${retryCount + 1} 次尝试获取播放列表容器失败 attempt to retrieve the playlist container failed.，重试中 retrying...`);
                 // 重新点击保存按钮
                 saveButton.click();
                 await new Promise(r => setTimeout(r, 1500));
@@ -272,14 +272,14 @@ async function addVideoToPlaylist(videoId, playlistName) {
                 const isChecked = checkbox.getAttribute('aria-checked') === 'true';
 
                 if (!isChecked) {
-                    console.log(`将视频添加到播放列表 ${playlistName}`);
+                    console.log(`将视频添加到播放列表 add video to playlist ${playlistName}`);
                     checkbox.click();
                     await new Promise(r => setTimeout(r, 500));
                 } else {
                     console.log(`视频已在播放列表 ${playlistName} 中，跳过`);
                 }
             } else {
-                console.log(`播放列表 ${playlistName} 不存在，创建新的...`);
+                console.log(`播放列表if the playlist ${playlistName} does not exist，创建新的 create a new one...`);
                 const createNewButton = await waitForElement('button[aria-label^="新建播放列表"], button[aria-label^="New playlist"]');
                 createNewButton.click();
                 await new Promise(r => setTimeout(r, 1000));
