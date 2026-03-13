@@ -280,7 +280,7 @@ async function addVideoToPlaylist(videoId, playlistName) {
                 }
             } else {
                 console.log(`播放列表if the playlist ${playlistName} does not exist，创建新的 create a new one...`);
-                const createNewButton = await waitForElement('button[aria-label^="新建播放列表"], button[aria-label^="New playlist"]');
+                const createNewButton = await waitForElement('button[aria-label^="新建播放列表"], button[aria-label^="Create"]'); //clearing this error
                 createNewButton.click();
                 await new Promise(r => setTimeout(r, 1000));
 
@@ -293,17 +293,17 @@ async function addVideoToPlaylist(videoId, playlistName) {
                 createButton.click();
             }
         } catch (error) {
-            console.error('处理播放列表选项失败:', error);
+            console.error('处理播放列表选项失败: failed to process playlist options:', error);
             throw error;
         }
 
         // 等待操作完成
         await new Promise(r => setTimeout(r, 1500));
-        console.log(`视频 ${videoId} 已处理完成`);
+        console.log(`视频 ${videoId} 已处理完成 processed`);
         return { status: "continue", success: true }; // 修改返回值格式
 
     } catch (error) {
-        console.error(`添加视频 ${videoId} 失败:`, error);
+        console.error(`添加视频 add video ${videoId} 失败: fail:`, error);
         return { status: "continue", error: error.message }; // 即使失败也继续处理下一个
     }
 }
