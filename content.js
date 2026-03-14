@@ -80,7 +80,7 @@ const waitForElement = (selector, timeout = 5000, parent = document) => {
             if (element) {
                 resolve(element);
             } else if (Date.now() - startTime > timeout) {
-                reject(new Error(`元素 element ${selector} 在 ${timeout}ms 内未找到 not found inside`));
+                reject(new Error(`元素 element ${selector} 在 ${timeout}ms 内未找到 not found inside`)); //error throwing here
             } else {
                 setTimeout(checkElement, 100);
             }
@@ -280,7 +280,7 @@ async function addVideoToPlaylist(videoId, playlistName) {
                 }
             } else {
                 console.log(`播放列表if the playlist ${playlistName} does not exist，创建新的 create a new one...`);
-                const createNewButton = await waitForElement('button[aria-label^="新建播放列表"], button[aria-label^="Create New Playlist"]'); //clearing this error hopefully
+                const createNewButton = await waitForElement('button[aria-label^="新建播放列表"], div[yt-spec-button-shape-next__button-text-content^="New playlist"]'); //clearing this error hopefully button[aria-label^="Create New Playlist"]
                 createNewButton.click();
                 await new Promise(r => setTimeout(r, 1000));
 
